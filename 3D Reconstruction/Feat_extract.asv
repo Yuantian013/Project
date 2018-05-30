@@ -1,0 +1,13 @@
+function [f,d]=Feat_extract(im)
+if class(im)~='single'
+    im=im2single(im);
+    fprint
+end
+num_im=size(im,3);
+f=cell(1,num_im);
+d=cell(1,num_im);
+for i=1:num_im
+    [f{i},d{i}]=vl_sift(im(:,:,i));
+    fprintf(['Finish extracting ',num2str(i),'th image\n']);
+end
+end
