@@ -16,9 +16,9 @@ function [im,Num_f]=load_im(im_folder,only_foreground,threshold)
     	fprintf(['Finish loading ',num2str(i),'th images.\n']);
     end
     [h,w]=size(im(:,:,1));
-    tranch=floor(h/4);
-    trancw=floor(w/4);
-    im=im(tranch*2/3:h-tranch,trancw:w-trancw,:);%%²Ã¼ôÍ¼Æ¬
+%     tranch=floor(h/4);
+%     trancw=floor(w/4);
+    im=im(700:2200,1000:3100,:);%%²Ã¼ôÍ¼Æ¬
     if only_foreground==1
     im_back=mean(im,3); % get the average image as the background
     threshold=25;

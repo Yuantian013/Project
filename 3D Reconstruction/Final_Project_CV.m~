@@ -16,9 +16,8 @@ im=im2single(im);
 %% 2. Use normalized 8 points RANSAC algorithm to find best matches
 [good_matches,F_best]=Norm_EightPoints_RANSAC_by_d(f,d);
 %% 2.2 Use normalized 8 points RANSAC algorithm to find best matches
-[good_matches_15,F_best_15]=For15(f,d);
-F_best(:,:,15)=F_best_15(:,:,15);
-good_matches{15}=good_matches_15{15};
+[good_matches{15},F_best_15]=For15(f,d);
+
 %% 2.3
 [~]=Showmatches(f,good_matches,im,15);
 %% 2.4 Visualize Foundamental Matrix

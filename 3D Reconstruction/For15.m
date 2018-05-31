@@ -1,4 +1,4 @@
-function [good_matches,F_best]=Norm_EightPoints_RANSAC_by_d(f,descriptor,iter,num_seed)
+function [good_matches,F_best]=For15(f,descriptor,iter,num_seed)
 % normalized eight-point algorithm with RANSAC
 % output foundamental matrix F_best and good matches
 % ----------------input--------------------------
@@ -16,7 +16,7 @@ function [good_matches,F_best]=Norm_EightPoints_RANSAC_by_d(f,descriptor,iter,nu
 % current image and the next image
 fprintf('Start 8-point RANSAC...\n');
 if nargin==2
-    iter=1000;    %iteration times of RANSAC
+    iter=10000;    %iteration times of RANSAC
     num_seed=20; % number of seeds
 end
 if nargin==3
@@ -25,15 +25,11 @@ end
 num_im=size(f,2);
 F_best=zeros(3,3,num_im);%%
 good_matches=cell(1,num_im);
-for j=1:num_im % loop across all images
-    max_num_inliers=0; % counter of inliers
-    threshold=1.2; %<-------- threshold for Sampson distance
-    if (j<=num_im-1)
-        [matches,~]=vl_ubcmatch(descriptor{j},descriptor{j+1},3);
-    else
-        [matches,~]=vl_ubcmatch(descriptor{j},descriptor{1},3);
-    end
+j=15;
+   [matches,~]=vl_ubcmatch(descriptor{15},descriptor{16});
+threshold=2;
     fprintf(['Number of matched points: ',num2str(size(matches,2)),'\n'])
+DIST=100000;
     for i=1:iter
         % randomly selected
         num_matches=size(matches,2);%number of matches
@@ -93,10 +89,11 @@ for j=1:num_im % loop across all images
         % 3.1 calculate Sampson distance
         dist=SampsonDist(F,points1,points2);
         indx_good_matches=dist<threshold;%返回的是logic数字 1/0 是不是inlier
-        num_inliers=sum(indx_good_matches);
+        SumDist=sum(dist);
         % update best-fitted model
-        if num_inliers>max_num_inliers
-            max_num_inliers=num_inliers;
+        if SumDist<DIST
+            %             max_num_inliers=num_inliers;
+            DIST=SumDist;
             F_best(:,:,j)=F;
         end
     end
@@ -110,11 +107,10 @@ for j=1:num_im % loop across all images
     end
     d_all=SampsonDist(F_best(:,:,j),points1_all,points2_all);
     % if wanting the exact index of inliers, use find(d_all<threshold)
-    indx_good_all=find(d_all<threshold);
+    indx_good_all=find(d_all<10);
     %     inliers1=points1_all(:,indx_good_all);
     %     inliers2=points2_all(:,indx_good_all);
     good_matches{j}(1,:)=matches(1,indx_good_all);
     good_matches{j}(2,:)=matches(2,indx_good_all);
     fprintf('Finished...\n');
-end
 end
