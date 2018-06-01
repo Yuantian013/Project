@@ -27,3 +27,4 @@ visualize_F(F_best,im,15);
 M=PointViewMat(good_matches);
 %% 3.1 Visualize some common found points
 visualize_CommonPoints(im,M,f);
+%% 
