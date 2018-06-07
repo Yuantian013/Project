@@ -1,5 +1,5 @@
-function BAGLABELS=BAGTEST(w,data,bagid)
-labels=data*w*labeld;
+function BAGLABELS=BAGTEST(data,labels)
+bagid = getident(data,'milbag');
 j=1;
 BAGLABELS=[];
 labelbag=[];
