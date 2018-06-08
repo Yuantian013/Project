@@ -19,8 +19,8 @@ YELLOW=-100000;
         if r*r-abs(g*(b-50))>RED
            RED=r*r-abs(g*(b-50));
         end
-        if r*g-(b*b)-abs(r-g-30)*abs(g-b-70)>YELLOW
-           YELLOW=r*g-(b*b)-abs(r-g-30)*abs(g-b-70);
+        if r*g-(b*b)-abs(r-g-20)abs(g-b-75)>YELLOW
+           YELLOW=r*g-(b*b)-abs(r-g-20)*abs(g-b-75);
         end
     end
     Bags(i,:)=[RED,YELLOW];
