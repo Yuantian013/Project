@@ -96,14 +96,21 @@ Bags2=feature_8(part2,im2);
 %% Baged
 data_8=Bags1;
 data_8(61:120,:)=Bags2;
-% Regularization
-[m,n]=size(data_8); 
-for i=1:n  
-    A(1,i)=norm(data_8(:,i));  
-end  
-A=repmat(A,m,1);  
-data_8=data_8./A;
 %%
 data_8=prdataset(data_8,baglabel);
 %% 
 prcrossval(data_8,parzenc);
+%% 
+r_init=[[1,0,0,0,0,-1,0,0],[0,-1,0,1,0,0,0,0]] ;%<---this is guessed value
+% optimize
+    gs=GlobalSearch('NumTrialPoints',200);
+    lb=-255*ones(1,16);
+    ub=255*ones(1,16);
+    options = optimoptions('fmincon','MaxIterations',10); 
+    Aeq=[];
+    beq=[]; %there is no constraints
+    problem=createOptimProblem('fmincon','Aeq',Aeq,'beq',beq,'lb',lb,'objective',@optarget,...
+    'options',options,'ub',ub,'x0',r_init);
+    [x,~,~,~] = run(gs,problem);
+    % optimization end
+    target=x;

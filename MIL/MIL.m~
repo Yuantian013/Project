@@ -67,11 +67,24 @@ MILES=bagembed(data_25,200);
 DATA_MILES=prdataset(MILES,baglabel);
 error_imp(1)=prcrossval(DATA_MILES,liknonc);
 %% 7.3 Improvement
+sigma=[10,25,50,75,100,250];
+error=ones(size(sigma,2),1);
+for i=1:size(sigma,2)
+MILES=bagembed(data,sigma(i));
 [coeff,score,latent] = pca(MILES);
 MILES_pca=MILES*coeff(:,1:50);
-%% 
+%% Generate data
 DATA_MILES_pca=prdataset(MILES_pca,baglabel);
-error_test=prcrossval(DATA_MILES_,liknonc)
+error_pca(i)=prcrossval(DATA_MILES_pca,liknonc)
+end
+%% Plot
+figure(3)
+plot(sigma(:),error(:))
+hold on
+plot(sigma(:),error_pca(:))
+xlabel('Sigma')
+ylabel('Cross validation error')
+legend('Before PCA','After PCA')
 %% ------------------------------------------------------------------------
 %% ------------------------------------------------------------------------
 %% ------------------------------------------------------------------------
@@ -80,17 +93,24 @@ error_test=prcrossval(DATA_MILES_,liknonc)
 %%
 Bags1=feature_8(part1,im1);
 Bags2=feature_8(part2,im2);
-%% 
+%% Baged
 data_8=Bags1;
 data_8(61:120,:)=Bags2;
 %%
 data_8=prdataset(data_8,baglabel);
 %% 
-prcrossval(data_8,fisherc);
+prcrossval(data_8,parzenc);
 %% 
-MILES=bagembed(data,50);
-DATA_MILES=prdataset(MILES,baglabel);
-error_test=prcrossval(DATA_MILES,fisherc);
-%%
-error_test=prcrossval(bags_MILES_prdataset,liknonc);
-%% 
+r_init=[[1,0,0,0,0,-1,0,0],[0,-1,0,1,0,0,0,0]] ;%<---this is guessed value
+% optimize
+    gs=GlobalSearch('NumTrialPoints',0);
+    lb=[];
+    ub=[];
+    options = optimoptions('fmincon','MaxFunctionEvaluations', 5); 
+    Aeq=[];
+    beq=[]; %there is no constraints
+    problem=createOptimProblem('fmincon','Aeq',Aeq,'beq',beq,'lb',lb,'objective',@optarget,...
+    'options',options,'ub',ub,'x0',r_init);
+    [x,~,~,~] = run(gs,problem);
+    % optimization end
+    target=x;
