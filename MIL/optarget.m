@@ -22,11 +22,11 @@ YELLOW=-100000;
         g=sum(img(part1{i}{j}))/size(part1{i}{j},2);
         b=sum(imb(part1{i}{j}))/size(part1{i}{j},2);
     % Keep the Most 
-        if (target(1:8)*[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]')>RED
-           RED=r*r-abs(g*(b-50));
+        if [r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(1:8)'>RED
+           RED=[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)';
         end
-        if (target(9:16)*[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]')>YELLOW
-           YELLOW=(target(9:16)*[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]');
+        if [r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)'>YELLOW
+           YELLOW=[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)';
         end
     end
     Bags1(i,:)=[RED,YELLOW];
@@ -46,11 +46,11 @@ YELLOW=-100000;
         g=sum(img(part2{i}{j}))/size(part2{i}{j},2);
         b=sum(imb(part2{i}{j}))/size(part2{i}{j},2);
     % Keep the Most 
-        if (target(1:8)*[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]')>RED
-           RED=r*r-abs(g*(b-50));
+        if [r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(1:8)'>RED
+           RED=[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)';
         end
-        if (target(9:16)*[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]')>YELLOW
-           YELLOW=(target(9:16)*[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]');
+        if [r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)'>YELLOW
+           YELLOW=[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)';
         end
     end
     Bags2(i,:)=[RED,YELLOW];

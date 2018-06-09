@@ -3,22 +3,15 @@ close all
 clc
 clear all
 %% 1.0 Load image
-[im1,num1]=loadimage_MIL('sival_apple_banana/banana');
-[im2,num2]=loadimage_MIL('sival_apple_banana/apple');
+[im1,num1]=loadimage_MIL('sival_medal_tea/greenteabox');
+[im2,num2]=loadimage_MIL('sival_medal_tea/goldmedal');
 %% 1.1 Extract instances
 width1=40;
-width2=50;
+width2=40;
 [bags1,lab1,part1]=extractinstances(im1,width1);
-[bags,lab2,part2]=extractinstances(im2,width2);
-%% 1.2.1 Or load data
-load('part1.mat') %raw / using extractinfo
-load('part2.mat') %raw / using extractinfo
-%% 1.3 Test image
-imagesc(lab2{8});
-colormap(gray);
+[bags2,lab2,part2]=extractinstances(im2,width2);
 %% 2.0 DATA & LABEL
-data=gendatmilsival(info1,info2);
-data_25=gendatmilsival(bags_b,bags_a);
+data_cnn=gendatmilsival(bags_b,bags_a);
 %% 2.1  Show bag id
 bagid = getident(data,'milbag');
 %% 2.2  Plot
@@ -103,10 +96,10 @@ prcrossval(data_8,parzenc);
 %% 
 r_init=[[1,0,0,0,0,-1,0,0],[0,-1,0,1,0,0,0,0]] ;%<---this is guessed value
 % optimize
-    gs=GlobalSearch('NumTrialPoints',0);
-    lb=[];
-    ub=[];
-    options = optimoptions('fmincon','MaxFunctionEvaluations', 5); 
+    gs=GlobalSearch;
+    lb=-255*ones(1,16);
+    ub=255*ones(1,16);
+    options = optimoptions('fmincon'); 
     Aeq=[];
     beq=[]; %there is no constraints
     problem=createOptimProblem('fmincon','Aeq',Aeq,'beq',beq,'lb',lb,'objective',@optarget,...

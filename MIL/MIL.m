@@ -6,8 +6,8 @@ clear all
 [im1,num1]=loadimage_MIL('sival_apple_banana/banana');
 [im2,num2]=loadimage_MIL('sival_apple_banana/apple');
 %% 1.1 Extract instances
-width1=40;
-width2=50;
+width1=35;
+width2=35;
 [bags1,lab1,part1]=extractinstances(im1,width1);
 [bags,lab2,part2]=extractinstances(im2,width2);
 %% 1.2.1 Or load data
@@ -103,10 +103,10 @@ prcrossval(data_8,parzenc);
 %% 
 r_init=[[1,0,0,0,0,-1,0,0],[0,-1,0,1,0,0,0,0]] ;%<---this is guessed value
 % optimize
-    gs=GlobalSearch('NumTrialPoints',200);
+    gs=GlobalSearch;
     lb=-255*ones(1,16);
     ub=255*ones(1,16);
-    options = optimoptions('fmincon','MaxIterations',10); 
+    options = optimoptions('fmincon'); 
     Aeq=[];
     beq=[]; %there is no constraints
     problem=createOptimProblem('fmincon','Aeq',Aeq,'beq',beq,'lb',lb,'objective',@optarget,...
