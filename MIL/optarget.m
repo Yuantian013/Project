@@ -1,9 +1,9 @@
 function loss=optarget(target)
 baglabel=evalin('base','baglabel');
 im1=evalin('base','im1');
-part1=evalin('base','part1');
+part1=evalin('base','part_cnn1');
 im2=evalin('base','im2');
-part2=evalin('base','part2');
+part2=evalin('base','part_cnn2');
 num_im=60;
 Bags1=zeros(60,2);
 Bags2=zeros(60,2);
@@ -61,5 +61,7 @@ data_8(61:120,:)=Bags2;
 %%
 data_8=prdataset(data_8,baglabel);
 %% 
-loss=prcrossval(data_8,parzenc);
+[loss,~]=cvcvcvcv(data_8);
+loss
+target
 end

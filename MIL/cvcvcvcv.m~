@@ -1,0 +1,15 @@
+function  [error_rate,baglabel]=cvcvcvcv(data,Label)
+num=1:120;
+num=num';
+num_bag=size(data,1);
+baglabel=zeros(num_bag,1);
+[train_data,test)]
+for i=1:num_bag
+    train=num~=i;
+    test=i;
+    w=parzenc(data(train,:));
+    label=data(test,:)*w*labeld;
+    baglabel(i)=label;
+end
+error_rate=size(find(baglabel~=Label),1)/num_bag;
+end 
