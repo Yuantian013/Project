@@ -1,0 +1,72 @@
+%HP_MIL High-Precision MIL Classifier
+% 
+%   W = HP_MIL(A, FRAC, C)
+% 
+% INPUT
+%   A    Dataset
+%   FRAC Fraction of instances taken into account in evaluation
+%   C    Trade-off parameter
+%
+% OUTPUT
+%   W   High precision linear MIL classifier 
+%
+% DESCRIPTION  
+% Computation of the linear classifier for the MIL dataset A by
+% maximizing an asymmetric error function.
+%
+% SEE ALSO 
+%  MAPPINGS, DATASETS, SIMPLE_MIL
+
+% Copyright: D.M.J. Tax, D.M.J.Tax@prtools.org
+% Faculty EWI, Delft University of Technology
+% P.O. Box 5031, 2600 GA Delft, The Netherlands
+
+%function W = hp_mil(A, frac, C)
+function W = hp_mil(varargin)
+
+argin = shiftargin(varargin,'scalar');
+argin = setdefaults(argin,[],'presence',1);
+
+if mapping_task(argin,'definition')
+   [a,frac,c] = deal(argin{:});
+   W = define_mapping(argin,'untrained','HighPrecision LC');
+   W = setbatch(W,0);
+
+elseif mapping_task(argin,'training')
+   [a,frac,C] = deal(argin{:});
+
+   if ~exist('minFunc', 'file')
+      error('HP_MIL requires the minFunc optimizer. Please download it from www.di.ens.fr/~mschmidt/Software/minFunc.html and add it to the Matlab path.');
+   end
+
+   %train
+   [n, dim] = size(a);
+   X = [+a ones(n,1)];
+   y = 2*ispositive(a) - 1;
+
+   v0 = 0.001*randn(dim+1,1);
+
+   opts.Method = 'lbfgs';
+   opts.Display = 'off';
+   opts.TolFun = 1e-4;
+   opts.TolX = 1e-4;
+   opts.MaxIter = 5000;
+   %opts.DerivativeCheck = 'on';
+   v = minFunc(@logexploss,v0,opts,X,y,C);
+
+   data.frac = frac;
+   data.v = v;
+   W = prmapping(mfilename, 'trained', data, getlablist(a), dim, 2);
+   W = setbatch(W,0);
+   W = setname(W, 'HighPrecision LC');
+
+elseif mapping_task(argin,'trained execution')
+
+   [a,frac] = deal(argin{1:2});
+   a = genmil(a);
+   [n,dim] = size(a);
+   W = getdata(frac);
+   out = [+a ones(n,1)]*W.v;
+   W = setdat(a,[-out out],frac);
+end
+

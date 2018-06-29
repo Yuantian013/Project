@@ -1,0 +1,114 @@
+%MILPROXM MIL proximity mapping
+%
+%    W = MILPROXM(A,KTYPE,KPAR);
+%
+% Definition of the proximity mapping between bags in a Multi-instance
+% Learning problem using proximity KTYPE with parameter KPAR. The dataset A
+% has to be MIL-dataset.
+%
+% The proximity is defined by the type KTYPE (and potentially its
+% parameter KPAR):
+%   'mahalanobis'  | 'm':  Mahalanobis distance between bags
+%   'hausdorff'    | 'h':  (maximum) Hausdorff distance between bags
+%   'emd'          | 'e':  Earth mover's distance (requires emd_mex !)
+%
+% See also: inckernel
+
+% Copyright: D.M.J. Tax, D.M.J.Tax@prtools.org
+% Faculty EWI, Delft University of Technology
+% P.O. Box 5031, 2600 GA Delft, The Netherlands
+
+function W = milproxm(A,ktype,kpar)
+
+if nargin<3
+	kpar = [];
+end
+if nargin<2
+	ktype  = 'h';
+end
+if nargin<1 | isempty(A)
+	% Definition of an untrained mapping:
+	W = mapping(mfilename,{ktype,kpar});
+	W = setname(W,'MILprox');
+	return
+end
+	
+if ~ismapping(ktype)
+	% Definition of the mapping, basically just store the parameters
+	if ~ismillabeled(A)
+		error('This mapping requires a labeled MIL set.');
+	end
+	[m,k] = size(A);
+	[W.bags,W.labs] = getbags(A);
+	W.ktype = ktype;
+	W.kpar = kpar;
+	W = mapping(mfilename,'trained',W,W.labs,...
+			getfeatsize(A),size(W.labs,1));
+	W = setname(W,'MIL proximity');
+else
+	% we have to apply the mapping:
+	W = getdata(ktype);
+	% check:
+	if ~hasmilbags(A)
+		A = genmil(A);
+		%error('This mapping is defined for MIL datasets.');
+	end
+	% setup parameters and storage:
+	[Abags,Alab,bagid] = getbags(A);
+	nra = length(Abags);
+	nrb = length(W.bags);
+
+	switch W.ktype
+	case {'haussdorff' 'h'}
+
+		K = zeros(nra,nrb);
+		for i=1:nra
+			for j=1:nrb
+				if isempty(W.kpar)
+					% keep is simle and fast:
+					d = sqeucldistm(Abags{i},W.bags{j});
+				else
+					d = +(Abags{i}*myproxm(W.bags{j},W.kpar{1},W.kpar{2}));
+				end
+				d1 = min(d,[],1); d2 = min(d,[],2);
+				K(i,j) = max(max(d1),max(d2));
+			end
+		end
+	case {'mahalanobis' 'm'}
+
+		K = zeros(nra,nrb);
+		for i=1:nra
+			Ca = cov(Abags{i});
+			Ma = mean(Abags{i});
+			for j=1:nrb
+				Cb = cov(W.bags{j});
+				Mb = mean(W.bags{j});
+				K(i,j) = (Ma-Mb)*inv(Ca+Cb)*(Ma-Mb)'/2;
+			end
+		end
+	case {'emd' 'e'}
+		if ~exist('emd_mex')
+			error('I need emd_mex (from http://www.mathworks.com/matlabcentral/fileexchange/12936-emd-earth-movers-distance-mex-interface)');
+		end
+
+		K = zeros(nra,nrb);
+		for i=1:nra
+			ni = size(Abags{i},1);
+			for j=1:nrb
+				nj = size(W.bags{j},1);
+				d = distm(W.bags{j},Abags{i});
+				K(i,j) = emd_mex(ones(1,nj),ones(1,ni),+d);
+			end
+		end
+
+	otherwise
+		error('I do not know type %s.',W.ktype);
+	end
+	% GRRR:
+	%W = setdata(A,K);
+	%W = set(W,'featlab',getlabels(ktype),'featsize',getsize_out(ktype));
+	W = dataset(K,Alab,'featlab',W.labs);
+	W = setident(W,bagid,'milbag');
+end
+
+return

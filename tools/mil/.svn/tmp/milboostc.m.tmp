@@ -1,0 +1,104 @@
+%MILBOOST
+%
+%   W = MILBOOSTC(A,FRAC,T)
+%
+% Train a MILBoost classifier on MIL dataset A. The weak classifiers are
+% decision stumps, and in total T decision stumps are trained.
+%
+% Implementation according to:
+% Babenko, B., Dolla ́r, P., Tu, Z., Belongie, S.: Simultaneous learning and alignment:
+% Multi-instance and multi-pose boosting. Technical Report CS2008, UCSD (2008)
+%
+%
+% SEE ALSO
+%   NOISYORLOSS, TRAINDECSTUMP
+
+function w = milboostc(a,frac,T,milloss)
+if nargin<4
+	milloss = @noisyORloss;
+end
+if nargin<3 || isempty(T)
+	T = 100;
+end
+if nargin<2 || isempty(frac)
+	frac = 'presence';
+end
+if nargin<1 || isempty(a)
+	w = mapping(mfilename,{frac,T,milloss});
+	w = setname(w,'MILBoost (%d rounds)',T);
+	return
+end
+
+if ~ismapping(frac)
+	errtol = 1e-15;
+
+	x = +a;
+	t = ispositive(a);
+	y = 2*t-1;
+	[bags,baglab,bagid,Ibag] = getbags(a);
+	B = length(bags);
+	bagy = ispositive(baglab);
+	[N,dim] = size(a);
+
+	% init
+	h = zeros(T,3);
+	alpha = zeros(T,1);
+	pij = zeros(N,1);
+	pi = zeros(B,1);
+	prev_out = zeros(N,1);
+	opts = optimset('fminunc');
+	opts = optimset(opts,'Display','off','LargeScale','off');
+
+	milloss = @noisyORloss;
+
+	for t=1:T
+		dd_message(3,'Run %d\n',t);
+		% train weights
+		[tmp,w] = milloss([],prev_out,[],bagy,Ibag);
+		% find the best weak classifier:
+		[h(t,:),besterr] = traindecstump(x,w);
+		% this classifier gives output:
+		this_out = h(t,3)*sign(x(:,h(t,1))-h(t,2));
+		% find the best alpha:
+		alpha(t) = fminunc(@(alpha) milloss(alpha,prev_out,this_out,bagy,Ibag),1,opts);
+		% update output full classifier:
+		prev_out = prev_out + alpha(t)*this_out;
+		% extra check:
+		if (besterr<=errtol), break; end
+	end
+	if (t<T)
+		T=t;
+		h=h(1:T,:);
+		alpha=alpha(1:T,:);
+	end
+	W.T = T;
+	W.h = h;
+	W.alpha = alpha;
+
+	ll = ['positive';'negative'];
+	w = mapping(mfilename,'trained',W,ll,dim,2);
+	w = setname(w,'MILBoost (%d rounds)',T);
+
+else   % evaluate a MIL dataset
+
+	a = genmil(a);
+	W = getdata(frac);
+	n = size(a,1);
+	z = +a;
+	out = zeros(n,1);
+	for i=1:W.T
+		out = out + W.alpha(i)*W.h(i,3)*sign(z(:,W.h(i,1))-W.h(i,2));
+	end
+	pij = 1./(1+exp(-out));
+	[bags,baglab,bagid,Ibag] = getbags(a);
+	B = length(bags);
+	out = zeros(B,1);
+	for i=1:B
+		out(i) = 1-prod(1-pij(Ibag{i}));
+	end
+	w = dataset([out 1-out],baglab,'featlab',getlabels(frac));
+	w = setident(w,bagid,'milbag');
+
+end
+
+

@@ -1,0 +1,126 @@
+\documentclass{report}
+\usepackage{verbatim,graphicx}
+
+\newcommand{\m}[1]{{\rm\tt #1}}
+\newcommand{\mil}{\m{mil\_tools}\xspace}
+\renewcommand{\vec}[1]{{\mathbf #1}}
+\newcommand{\vecx}{\ensuremath{\mathbf x}}
+\newcommand{\vecmu}{{\mathbf \mu}}
+\setlength{\parindent}{0pt}
+
+
+\begin{document}
+%----------------------------------------------------------------
+\thispagestyle{empty}
+\vspace*{2cm}
+\begin{center}
+{\LARGE Multi-instance toolbox \\[5mm]
+
+\m{mil\_tools 0.6.5}}
+
+{A Matlab toolbox for the description, processing and classification of
+compound data}
+
+\vspace*{1cm}
+\today \\
+D.M.J. Tax
+
+\vspace*{2cm}
+\vspace*{2cm}
+\end{center}
+
+
+%----------------------------------------------------------------
+\newpage
+
+
+\tableofcontents
+
+\vspace*{\stretch{1}}
+Copyright: D.M.J. Tax, D.M.J.Tax@prtools.org \\
+Faculty EWI, Delft University of Technology \\
+P.O. Box 5031, 2600 GA Delft, The Netherlands
+
+
+%----------------------------------------------------------------
+\newpage
+
+
+
+\chapter{Introduction}
+
+In pattern recognition the standard approach is to encode each object by
+a fixed set of features. For some applications this approach is very
+challenging. The object may be very complex, and to extract a single
+feature vector from the object may be a very limited representation. 
+
+Take for instance the classification of an image. An image may contain
+several interesting sub parts, or objects. To classify an image as
+'contains a face' or as 'does not contain a face' one often performs a
+(rough) segmentation or detection, and classifies each individual
+detection. When one of the detections is classified as a face, the image
+is classified as 'contains a face'. In most cases the classifier is
+trained on labeled detections, i.e. detections are manually classified
+as 'face' or 'non-face'.
+
+In multi-instance learning the task is to classify such compound
+objects, without relying on a (manual) labeling of training segments.
+It is required that the classifier itself detects the 'face' and
+'non-face' segments, without manual intervention. 
+When the classifier is presented a new image, the classifier has to
+classify all individual segments, and combine these outputs into a final
+output for the image.
+
+In the terminology of multi-instance learning, the compound object, or
+the image, is called a {\bf bag}. The compound object (for instance,
+image) contains several sub-parts (image regions) that are called {\bf
+instances}. All instances are assumed to be represented by a single
+feature vector (all with the features). That means that each bag is
+represented by a set of feature vectors. Furthermore, each bag has a
+label, `positive' or `negative'. The labels of the instances are
+unknown. The task of a multi-instance classifier is to find the bag
+label, based on the set of instance feature vectors.
+
+\chapter{MIL\_tools}
+
+To implement the multi-instance learning in Prtools, it is required that
+the standard dataset is extended with an additional identifier that
+indicates to which bag an instance belongs.
+
+While in the standard Prtools only a dataset and labels have to be
+given, for a multi-instance dataset also bag identifiers have to be
+defined:
+\begin{code}
+>> dat = rand(20,2);
+>> lab = genlab([10 10]);
+>> a = dataset(dat,lab);         % standard prtools dataset
+>> bagid = genlab([5 5 5 5]);
+>> a = gendatmil(dat,lab,bagid)  % MIL dataset with 4 bags, 5 instances each
+\end{code}
+
+The variable \m{a} now contains a dataset, where each instance is
+represented by a feature vector. For each of the instances it is also
+know to which bag it belongs.
+
+\section{Working with bags of instances}
+
+When a multi-instance dataset is constructed, you can extract the
+individual bags like:
+\begin{code}
+>> [bags, baglab] = getbags(a);
+\end{code}
+The variable \m{bags} is a cell-array that contains in each cell an
+individual bag.
+
+Furthermore, in \m{baglab} the label of each bag is returned.
+This bag label is derived from the labels of the instances in this bag.
+To combine the labels of the instances to one bag label, a rule has to
+be defined. The default is to use the 'presence'-rule. It means that the 
+
+\section{Generating bag labels}
+
+When the instance labels are not known (which is often the
+case), the label of the bag is copied. It may also be possible to assign
+the label of the bag
+
+\end{document}

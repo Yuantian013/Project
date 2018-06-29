@@ -1,0 +1,223 @@
+\usepackage{graphicx}
+\usepackage{doc}
+\usepackage{theorem}
+\usepackage{ifthen}
+
+% Page and paragraph settings:
+% I like this more:
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
+\reversemarginpar
+\setlength{\marginparsep}{0pt}
+
+% environment definitions:
+% a better itemize:
+\newenvironment{smallitem1}
+  {\vspace*{-0.25cm}\begin{list}{-}{\setlength{\itemsep}{-2pt plus 2pt minus 1pt}}}
+  {\end{list}}
+\newenvironment{smallitem2}
+  {\vspace*{-0.25cm}\begin{list}{$\bullet$}{\setlength{\itemsep}{-2pt plus 2pt minus 1pt}}}
+  {\end{list}}
+
+% optional environment:
+\newsavebox{\optiontitle}
+\newenvironment{optional}[1][Optional]
+{\sbox{\optiontitle}{\small\sc\lowercase{#1}}\hrulefill {\small\sc ~~\usebox{\optiontitle}~} \hrulefill \\}
+{\par\vspace*{-1ex}\hrulefill {\small\sc ~~end \usebox{\optiontitle}~} \hrulefill}
+
+% alert command
+\newcommand{\lhand}{\centering\includegraphics[height=0.35cm]{handarr4}}
+\newcommand{\rhand}{\centering\includegraphics[height=0.35cm]{handarr4rev}}
+\newcommand{\alert}{\mbox{}\marginpar[\lhand]{\rhand}}
+\newcommand{\Alert}[1][Note]{{\bf #1:} \alert}
+
+% reference to book command
+\newcommand{\book}[1]
+ {\marginpar{
+  \centering\includegraphics[height=0.46cm]{lbook}\\
+  \hspace{0pt}#1}}
+
+% exercise environment:
+\newcounter{exctr}[chapter]
+\newcounter{questionctr}[exctr]
+%\newenvironment{exercise}
+%{\vspace*{2mm}\alert \refstepcounter{exctr}{\noindent\scshape Exercise \arabic{exctr}.}\begin{center}\begin{minipage}[l]{12cm}}
+%{\end{minipage}\end{center}}
+%\newenvironment{exercise}
+%{\vspace*{2mm}\begin{minipage}[l]{\linewidth}\refstepcounter{exctr}{\hand\noindent\scshape Exercise \arabic{exctr}.}\begin{center}\begin{minipage}[l]{12cm}}
+%{\end{minipage}\end{center}\end{minipage}\vspace*{2mm}}
+\newenvironment{exercise}
+{\refstepcounter{exctr} \begin{description}
+  \item[Exercise \thechapter.\arabic{exctr}]}
+  {\end{description}}
+\def\theexctr{\arabic{chapter}.\arabic{exctr}}
+
+\newcounter{example_ctr}
+\newenvironment{example}[1]
+{\lhand\setcounter{subexample_ctr}{0}\refstepcounter{example_ctr}
+{\noindent{\em Example \arabic{example_ctr}. #1}}\\[0.2cm]}
+
+\newcounter{subexample_ctr}
+\newenvironment{subexample}[1]{\stepcounter{subexample_ctr}{{\em
+\arabic{example_ctr}.\arabic{subexample_ctr}} \hspace{0.1cm} {#1}}}
+
+
+
+% the solution environment
+\newboolean{givesolution}
+%DR \newcommand{\solution}[1]{
+%DR \ifthenelse{\boolean{givesolution}}
+%DR   {\emph{(A) #1}}{}}
+
+% definition environment
+\theoremstyle{plain}
+\theoremheaderfont{\scshape}
+\newtheorem{definition}{Definition}
+
+\@ifundefined{alltt}{\RequirePackage{alltt}}{}
+\def\code{%
+%DR  \def\verbatim@processline{%
+%DR    {\setbox0=\hbox{\the\verbatim@line}%
+%DR    \hsize=\wd0 \the\verbatim@line\par}}%
+  \@minipagetrue%%%DPC%%%
+  \@tempswatrue%%%DPC%%%
+  \setbox0=\vbox\bgroup 
+  \alltt 
+}
+\def\endcode{%
+  \endalltt
+%DR \endverbatim
+  \unskip\setbox0=\lastbox %%%DPC%%%
+  \egroup
+  \par\vspace*{1ex} \box0 %\par
+}
+
+\@ifundefined{psframebox}{\RequirePackage{pstricks}}{}
+\newgray{mygray}{.50}
+\pslongbox{mybox}{\psframebox[fillcolor=mygray,fillstyle=solid]}
+\def\scode{%
+  \@minipagetrue%%%DPC%%%
+  \@tempswatrue%%%DPC%%%
+  \setbox0=\vbox\bgroup 
+  \alltt 
+}
+\def\endscode{%
+  \endalltt
+  \unskip\setbox0=\lastbox %%%DPC%%%
+  \egroup
+  \par %\vspace*{1ex} 
+  \mybox
+  \box0
+  \endmybox
+  \par
+}
+
+%DR
+\@ifundefined{Ovalbox}{\RequirePackage{fancybox}}{}
+\newcommand{\key}[1]{\Ovalbox{\raisebox{0pt}[4pt][-1pt]{\footnotesize \tt #1}}}
+
+%DR
+\@ifundefined{xspace}{\RequirePackage{xspace}}{}
+
+% matlab word(s) and operators
+\newcommand{\Matlab}{{\textsc{Matlab}}\xspace}
+\newcommand{\PRTools}{{\textsc{PRTools}}\xspace}
+\newcommand{\MeasTools}{{\textsc{MeasTools}}\xspace}
+\newcommand{\DDTools}{{\textsc{DDTools}}\xspace}
+%DXD Replace this by a more complicated version that can handle underscores
+%\newcommand{\m}[1]{{\rm \tt #1}}
+%\catcode`\_=12
+%{\catcode`\_=13
+%\gdef\understart{\begingroup\catcode`_=13\def\_{\hspace{1pt}\vbox{\hrule width0.4em height1pt}\hspace{1pt}}}}
+%\def\underend{\endgroup}
+%\newcommand{\m}[1]{\mbox{\rm\understart\tt\kern-1ex\ #1\underend}}
+
+%DXD Previous version did not work correctly, so this may better:
+\def\setcode#1{\rm\tt #1\egroup}
+\def\m{\bgroup\catcode`_=\active\setcode}
+
+
+%DR
+\newcommand{\unix}{{\textsc{Unix}}\xspace}
+%\newcommand{\nr}{\#\xspace}
+% matlab operators:
+\newcommand{\mytilde} {{\tt \~{}}\xspace}
+\newcommand{\isnot} {{\tt \~{}=}\xspace}
+\renewcommand\vec[1]{\mathchoice
+    {\mbox{\boldmath$\displaystyle\mathrm{#1}$\unboldmath}}
+    {\mbox{\boldmath$\textstyle\mathrm{#1}$\unboldmath}}
+    {\mbox{\boldmath$\scriptstyle\mathrm{#1}$\unboldmath}}
+    {\mbox{\boldmath$\scriptscriptstyle\mathrm{#1}$\unboldmath}}}
+
+%\MakeShortVerb{\#}
+
+\newwrite\@answers
+\newif\if@answersopen \global\@answersopenfalse
+\def\@openanswers{\immediate\openout\@answers=\jobname_solutions.tex\relax
+	\immediate\write\@answers{\string\documentclass{book}}
+	\immediate\write\@answers{\string\usepackage{course}}
+	\immediate\write\@answers{\string\usepackage{a4wide}}
+	\immediate\write\@answers{\string\begin{document}}
+	\immediate\write\@answers{\string\thispagestyle{empty}}
+	\immediate\write\@answers{\string\pagestyle{empty}}
+	\immediate\write\@answers{\string\parindent 0pt}
+	\immediate\write\@answers{\string\parskip 0pt}
+  \message{(\jobname_solutions.tex)}%
+  \global\@answersopentrue}
+\def\@closeanswers{
+	\immediate\write\@answers{\string\end{document}}
+	\immediate\closeout\@answers\relax
+  \message{(\jobname.ans)}%
+  \global\@answersopenfalse}
+\AtEndDocument{\if@answersopen \@closeanswers \fi}
+
+\newcounter{prevchapter}
+\newcounter{prevexctr}
+
+\newcommand{\question}[0]{
+	\refstepcounter{questionctr}
+	{\bf (\alph{questionctr})\hspace*{1.5mm}\xspace}
+}
+
+\newcommand{\solution}[1]{
+	\if@answersopen \else \@openanswers \fi
+	\ifnum \c@prevchapter = \c@chapter \else 
+	  \immediate\write\@answers{\string\clearpage}
+		\immediate\write\@answers{\string\section*{IN4085 solutions to exercises: week \arabic{chapter}}}
+	\fi
+	\ifnum \c@prevexctr = \c@exctr \else 
+%	  \immediate\write\@answers{\string\subsubsection*{Exercise \arabic{chapter}.\arabic{exctr}}}
+	  \immediate\write\@answers{\string\vspace*{2mm}}
+	  \immediate\write\@answers{{\string\bf {Exercise \arabic{chapter}.\arabic{exctr}}} \string\\}
+	\fi
+	\def\protect{\noexpand\protect\noexpand}
+	\immediate\write\@answers{\string\makeatletter}
+	\ifnum \c@questionctr = 0
+		\immediate\write\@answers{\string #1}
+	\else
+		\immediate\write\@answers{(\alph{questionctr}) \string #1}
+	\fi
+	\immediate\write\@answers{\string\makeatother}
+  \immediate\write\@answers{}
+	\restore@protect
+	\setcounter{prevchapter}{\value{chapter}}
+	\setcounter{prevexctr}{\value{exctr}}
+}
+
+\newcommand{\reminder}[1]{
+\begin{center}
+	\fboxrule 1pt
+  \framebox{
+  \hspace*{-3mm}\begin{minipage}[c]{14cm}
+    \vspace*{2mm}
+		\bf
+		\begin{center}
+			{\sc Take-home messages}
+		\end{center}
+		#1
+    \vspace*{-1mm}
+  \end{minipage}
+	\hspace*{3mm}
+  }
+\end{center}
+}

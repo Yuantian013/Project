@@ -1,0 +1,6 @@
+﻿Parameter,value
+ubc_match threshold,1.2
+Sampson distance threshold,50
+RANSAC iteration times,$1\times10^4$ for image 1-4 
+,$2\times10^5$ for image 15
+,$2\times10^4$ for image 16-19

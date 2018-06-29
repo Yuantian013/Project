@@ -8,8 +8,8 @@ num_im=60;
 Bags1=zeros(60,2);
 Bags2=zeros(60,2);
 for i=1:num_im
-RED=-100000;
-YELLOW=-100000;
+RED=100000;
+YELLOW=100000;
     %%get the ith image's red/green/blue value and reshape to one row
     imr=reshape(im1(:,:,1,i),[1,numel(im1(:,:,1,i))]);
     img=reshape(im1(:,:,2,i),[1,numel(im1(:,:,2,i))]);
@@ -22,18 +22,18 @@ YELLOW=-100000;
         g=sum(img(part1{i}{j}))/size(part1{i}{j},2);
         b=sum(imb(part1{i}{j}))/size(part1{i}{j},2);
     % Keep the Most 
-        if [r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(1:8)'>RED
-           RED=[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)';
+        if (r-target(1))^2+(g-target(2))^2+(b-target(3))^2<RED
+           RED=(r-target(1))^2+(g-target(2))^2+(b-target(3))^2;
         end
-        if [r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)'>YELLOW
-           YELLOW=[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)';
+        if (r-target(4))^2+(g-target(5))^2+(b-target(6))^2<YELLOW
+           YELLOW=(r-target(4))^2+(g-target(5))^2+(b-target(6))^2;
         end
     end
     Bags1(i,:)=[RED,YELLOW];
 end
 for i=1:num_im
-RED=-100000;
-YELLOW=-100000;
+RED=100000;
+YELLOW=100000;
     %%get the ith image's red/green/blue value and reshape to one row
     imr=reshape(im2(:,:,1,i),[1,numel(im2(:,:,1,i))]);
     img=reshape(im2(:,:,2,i),[1,numel(im2(:,:,2,i))]);
@@ -46,11 +46,11 @@ YELLOW=-100000;
         g=sum(img(part2{i}{j}))/size(part2{i}{j},2);
         b=sum(imb(part2{i}{j}))/size(part2{i}{j},2);
     % Keep the Most 
-        if [r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(1:8)'>RED
-           RED=[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)';
+        if (r-target(1))^2+(g-target(2))^2+(b-target(3))^2<RED
+           RED=(r-target(1))^2+(g-target(2))^2+(b-target(3))^2;
         end
-        if [r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)'>YELLOW
-           YELLOW=[r^2,g^2,b^2,r*g,r*b,g*b,r*g*b,1]*target(9:16)';
+        if (r-target(4))^2+(g-target(5))^2+(b-target(6))^2<YELLOW
+           YELLOW=(r-target(4))^2+(g-target(5))^2+(b-target(6))^2;
         end
     end
     Bags2(i,:)=[RED,YELLOW];
@@ -61,7 +61,6 @@ data_8(61:120,:)=Bags2;
 %%
 data_8=prdataset(data_8,baglabel);
 %% 
-[loss,~]=cvcvcvcv(data_8);
-loss
+loss=prcrossval(data_8,fisherc)
 target
 end

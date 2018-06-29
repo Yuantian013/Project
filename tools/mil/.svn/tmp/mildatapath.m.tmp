@@ -1,0 +1,17 @@
+%
+%     DPATH = MILDATAPATH;
+%
+% Define the directory name where all MIL dataset are stored.
+function dpath = mildatapath;
+
+if strncmp(computer,'MAC',3)
+	dpath = '/data/mil/';
+else
+	if strcmp(computer,'GLNXA64')
+		dpath = '/data/dtax/mil/';
+	else
+		dpath = '/data/pr/home/davidt/data/mil/';
+	end
+end
+
+return

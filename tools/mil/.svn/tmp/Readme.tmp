@@ -1,0 +1,70 @@
+Multiple Instance Learning Matlab toolbox. (version 0.7.8)
+
+This toolbox is an add-on to the PRTools toolbox. The toolbox contains
+algorithms to train, investigate, visualize and evaluate multiple
+instance learning classifiers. Realize that this toolbox is quite
+preliminary still, because I am still not sure if the structure and
+the coding choices that I made are sensible. But the code works:-)
+
+Graphical representation how to get from a collection of bags of
+instances, to a label per bag:
+
+          +------------------------- std.cl. --- Nx2 --- milcombine
+MIL dataset                                                |
+(instances) -- milvector -- Bxp'---- std.cl ------------ dataset
+  Nxp      --- milkernel -- BxB -- kernel.cl ------------ Bx2   
+                                                           | 
+          +------------------------- mil.cl ---------------+
+
+N: total nr of objects    p: dimensionality
+B: number of bags
+
+There are three 'extra' converter MIL tools:
+milcombine : combine the outputs by a standard classifier on the individual
+             instances
+           shortcut: simple_mil(w) = w*milcombine
+milvector  : compute a feature vector from a bag of instances
+           shortcut: vector_mil(w) = milvector*w
+milkernel  : compute (dis)similarities between bags
+           shortcut: sv_mil(w) = milkernel*svc
+
+
+To get the most out of this toolbox, some experience with the PRTools
+toolbox is recommended.  This toolbox is developed as a research tool so
+no guarantees can be given.
+
+- Requirements:
+
+In order to make this toolbox work, you need:
+0. A computer and some enthusiasm
+1. PRTools 4.1.0 or higher
+2. This toolbox.
+
+- Installation:
+
+The installation of the toolbox is almost trivial. Unzip the file, store
+the contents in a directory (name it for instance MIL) and add this
+directory to your matlab path.
+
+- Information and example code:
+
+For the most basic information, type  help MIL (use the directory
+name where the toolbox is stored). Some simple example is given in
+tstmusk.m.
+
+
+* Notes on version 0.7.8
+- Fixed the milvector.m. It is now a trained mapping, instead of a fixed
+  one. It also introduced a mountain of other problems (giving a
+  cell-array as an imput parameter caused problems for prtools, so that
+  is changed as well).
+- Removed the combineobjects.m 
+- Extended this README
+- Added getwnames.m to make the examle work, and renamed nrbags to
+  nrfolds in the tstmusk.
+- Fixed the computation of the operating point in the milroc.
+
+
+* Notes on version 0.7.7
+- Added this README
+- Put this on the webpage

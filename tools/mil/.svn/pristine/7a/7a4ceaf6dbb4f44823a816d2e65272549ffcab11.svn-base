@@ -1,0 +1,596 @@
+\documentclass{report}
+\usepackage{verbatim,graphicx}
+\usepackage{tikz}
+\usepackage{a4wide}
+\usepackage{url}
+
+\newcommand{\m}[1]{{\rm\tt #1}}
+\newcommand{\mil}{\m{mil\_tools}\xspace}
+\renewcommand{\vec}[1]{{\mathbf #1}}
+\newcommand{\vecx}{\ensuremath{\mathbf x}}
+\newcommand{\vecmu}{{\mathbf \mu}}
+\setlength{\parindent}{0pt}
+
+
+\begin{document}
+%----------------------------------------------------------------
+\thispagestyle{empty}
+\vspace*{2cm}
+\begin{center}
+{\LARGE Multi-instance toolbox \\[5mm]
+
+\m{mil\_tools 1.1.0}}
+
+{A Matlab toolbox for the description, processing and classification of
+compound data}
+
+\vspace*{1cm}
+\today \\
+D.M.J. Tax
+
+\vspace*{2cm}
+\vspace*{2cm}
+\end{center}
+
+
+%----------------------------------------------------------------
+\newpage
+
+
+\tableofcontents
+
+\vspace*{\stretch{1}}
+Copyright: D.M.J. Tax, D.M.J.Tax@prtools.org \\
+Faculty EWI, Delft University of Technology \\
+P.O. Box 5031, 2600 GA Delft, The Netherlands
+
+
+%----------------------------------------------------------------
+\newpage
+
+
+
+\chapter{Introduction}
+
+In pattern recognition the standard approach is to encode each object by
+a fixed set of features. For some applications this approach is very
+challenging. The object may be very complex, and to extract a single
+feature vector from the object may be a very limited representation. 
+
+Take for instance the classification of an image. An image may contain
+several interesting sub parts, or objects. To classify an image as
+'contains a face' or as 'does not contain a face' one often performs a
+(rough) segmentation or detection, and classifies each individual
+detection. When one of the detections is classified as a face, the image
+is classified as 'contains a face'. In most cases the classifier is
+trained on labeled detections, i.e. detections are manually classified
+as 'face' or 'non-face'.
+
+In multi-instance learning the task is to classify such compound
+objects, without relying on a (manual) labeling of training segments.
+It is required that the classifier itself detects the 'face' and
+'non-face' segments, without manual intervention. 
+When the classifier is presented a new image, the classifier has to
+classify all individual segments, and combine these outputs into a final
+output for the image.
+
+In the terminology of multi-instance learning, the compound object, or
+the image, is called a {\bf bag}. The compound object (for instance,
+image) contains several sub-parts (image regions) that are called {\bf
+instances}. All instances are assumed to be represented by a single
+feature vector (all with the features). That means that each bag is
+represented by a set of feature vectors. Furthermore, each bag has a
+label, `positive' or `negative'. The labels of the instances are
+unknown. The task of a multi-instance classifier is to find the bag
+label, based on the set of instance feature vectors.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[scale=1.0]
+   % dataset
+   \draw (0,-3) rectangle (1,3) node[above] {dataset};
+   \draw[rounded corners,draw=gray!90] (0,-3) rectangle (1,-2.3) {};
+   \draw[rounded corners,draw=gray!90] (0,-2.3) rectangle (1,-2.1) {};
+   \draw[rounded corners,draw=gray!90] (0,-2.1) rectangle (1,-1.8) {};
+   \draw[rounded corners,draw=gray!90] (0,-1.8) rectangle (1,-1.4) {};
+   \node (labels) at (9,0) {};
+   \draw (9,-1.5) rectangle (9.5,1.5) node[above] {labels};
+   \draw[->] (1,2) -- +(1.5,0);  % instance combiner
+   \node(cl1) at (3.5,2) [shape=rectangle,draw] {classifier};
+   \node(comb) at (6.5,2) [shape=rectangle,draw] {instance combiner};
+   \draw[->] (cl1) -- (comb);
+   \draw[->] (comb) -- (labels);
+   \draw[->] (1,0.5) -- +(1.5,0);  % bag vector
+   \node(bagv) at (3.5,0.5) [shape=rectangle,draw] {bag vector};
+   \node(cl2) at (6.5,0.5) [shape=rectangle,draw] {classifier};
+   \draw[->] (bagv) -- (cl2);
+   \draw[->] (cl2) -- (labels);
+   \draw[->] (1,-0.5) -- +(1.5,0);   % bag kernel
+   \node(bagk) at (3.5,-0.5) [shape=rectangle,draw] {bag kernel};
+   \node(cl3) at (6.5,-0.5) [shape=rectangle,draw] {classifier};
+   \draw[->] (bagk) -- (cl3);
+   \draw[->] (cl3) -- (labels);
+   \draw[->] (1,-2) -- +(1.5,0);    % instance selection
+   \node(instsel) at (4.0,-2) [shape=rectangle,draw] {instance selection};
+   \node(cl4) at (6.5,-2) [shape=rectangle,draw] {classifier};
+   \draw[->] (instsel) to [out=270,in=270] (cl4);
+   \draw[->] (cl4) to [out=90,in=90] (instsel);
+   \draw[->] (cl4) -- (labels);
+\end{tikzpicture}
+\caption{General overview of MIL classifiers.}
+\label{fig:overview}
+\end{figure}
+
+In Figure \ref{fig:overview} a schematic overview of possible classifier
+configurations is shown. On the left we start with a dataset, consisting
+of a large collection of instances (feature vectors) that are organised
+in bags. For each of the bags one output label should be predicted. This
+is indicated by the column on the right of the figure. Note that the
+height of the label matrix is less than the heigh of the instance
+matrix; there are less bags than there are instances in the dataset.
+
+Now fundamentally three, or four, different approaches can be
+taken. The first one, indicated in the top of the figure, is to classify
+each instance individually by a standard classifier, and then combine
+the instance outputs into an overall output for each bag. Any standard
+classifier can be used, but the instance combiner should perform the
+hard task to combine the unreliable instance output labels into a
+trustworthy bag label.
+
+In the second and third approach the bags of instances are directly
+`reduced' to a standard representation. It could be a feature vector
+(characterizing some statistics on the bags) or a kernel matrix
+(measuring the similarity between different bags). Any classifier can
+then be applied to this bag representation.
+
+Finally, in the last approach the informative instance(s) of each bag
+are selected. Given the informative instances (and possibly removing or
+relabeling the uninformative ones), a standard classifier is trained.
+This can be performed in an iterative fashion: the selection of the
+instances is typically done based on the output of the classifier in a
+previous iteration.
+
+In the coming chapters of this manual, realisations of these four
+different approaches will be given.
+
+%----------------------------------------------------------------
+\chapter{MIL tools}
+
+This MIL toolbox is an extension to Prtools, a Pattern Recognition
+toolbox for Matlab. So in order to use the functionality of the MIL
+toolbox, you have to have Prtools. Furthermore, for some evaluation
+procedures, in particular the Area under the ROC curve, the code of
+dd\_tools is used. Dd\_tools is the Data Description toolbox, another
+extension to Prtools\footnote{Available at
+   \url{http://prlab.tudelft.nl/david-tax/dd_tools.html}.}.
+
+
+\section{The MIL dataset}
+\label{sec:mildataset}
+
+To implement the multi-instance learning in Prtools, it is required that
+the standard dataset is extended with an additional identifier that
+indicates to which bag an instance belongs.
+
+While in the standard Prtools only a dataset and labels have to be
+given, for a multi-instance dataset also bag identifiers have to be
+defined. With the use of the command \verb+genmil+ this can be done:
+\begin{verbatim}
+>> dat = rand(20,2);
+>> lab = genlab([10 10]);     % label the first 10 objs 1, the rest 2
+>> a = prdataset(dat,lab);    % standard prtools dataset
+>> bagid = genlab([5 5 5 5]);
+>> a = genmil(dat,lab,bagid)  % MIL dataset with 4 bags, 5 instances each
+\end{verbatim}
+On the command line should appear:
+\begin{verbatim}
+20 by 2 dataset with 2 classes: [10  10]
+\end{verbatim}
+
+The variable \m{a} now contains a dataset, where each instance is
+represented by a feature vector. For each of the instances it is also
+know to which bag it belongs. To inspect how many bags are present, use
+the command \verb+mildisp+:
+\begin{verbatim}
+>> mildisp(a)
+20 by 2 MIL dataset with 4 bags: [0 pos, 4 neg]
+\end{verbatim}
+
+In this example we see that four bags have been found, zero positives
+and four negatives. In the MIL toolbox it is typically assumed that the labels of
+the classes are \verb+positive+ and \verb+negative+. In Prtools you can
+change the names of the classes by using \verb+setlablist+:
+\begin{verbatim}
+>> b = setlablist(a,{'positive','negative'});
+>> mildisp(b)
+20 by 2 MIL dataset with 4 bags: [2 pos, 2 neg]
+\end{verbatim}
+Another way of doing this, is to use the function \verb+positive_class+:
+\begin{verbatim}
+>> b = positive_class(a,1);
+>> mildisp(b)
+20 by 2 MIL dataset with 4 bags: [2 pos, 2 neg]
+\end{verbatim}
+
+Note that in this example each instance has its own label. This label is
+consistent with the bag label. All instances in a positive bags have a
+positive label, and all instances in a negative bag have a negative
+label. This does not always have to be the case. In the strict Multiple
+Instance Learning setting, one single positive instance in a bag will
+make the whole bag positive. When all instances are negative, the bag
+will be labeled positive.
+
+This is shown in the next piece of code:
+\begin{verbatim}
+>> dat = rand(20,2);
+>> lab = [1;2;2;2;2; 1;2;2;2;2; 2;2;2;2;2; 2;2;2;2;2];
+>> baglab = genlab([5 5 5 5]);
+>> a = genmil(dat,lab,baglab);
+>> a = positive_class(a,1);
+>> mildisp(a)
+20 by 2 MIL dataset with 4 bags: [2 pos, 2 neg]
+\end{verbatim}
+In the second line only two out of the 20 instances are labeled
+positive, and that resulted in two positive bags.
+
+The rule that defines how instance labels are propagated to bag labels,
+can be given with a forth input argument of \verb+genmil+. The possible
+combination rules are defined in \verb+milcombine+, and the default is
+\verb+'presence'+ (if there is one instance positive, the whole bag is
+positive). One can change it to, for instance, a majority vote rule:
+\begin{verbatim}
+>> a = genmil(dat,lab,baglab,'majority');
+>> a = positive_class(a,1);
+>> mildisp(a)
+20 by 2 MIL dataset with 4 bags: [0 pos, 4 neg]
+\end{verbatim}
+In our example it would mean that none of the bags will be positive
+anymore. For other combination rules, use \verb+help milcombine+.
+
+The MIL dataset that you just created, is a standard Prtools dataset,
+and therefore all Prtools classifiers can use them. But they will only
+look at the instance labels, and the notion of the bags, and bag labels
+is unknown to them. In order to use that, you need to use classifier
+from the MIL toolbox.
+
+Finally, there are a few functions to create artificial MIL datasets:
+
+\begin{tabular}{ll}
+   \verb+gendatmilc+ & concept MIL problem \\
+   \verb+gendatmild+ & difficult MIL problem \\
+   \verb+gendatmilg+ & Gaussian MIL problem \\
+   \verb+gendatmilm+ & Maron MIL problem \\
+   \verb+gendatmilr+ & rotated distribution MIL problem \\
+   \verb+gendatmilw+ & width distribution MIL problem
+\end{tabular}
+
+
+
+\section{Working with bags of instances}
+
+When a multi-instance dataset is constructed, you can extract the
+individual bags and store it in a cell array using:
+\begin{verbatim}
+>> [bags, baglab] = getbags(a);
+\end{verbatim}
+The variable \m{bags} is a cell-array that contains in each cell an
+individual bag.
+Furthermore, in \m{baglab} the label of each bag is returned.
+This bag label is derived from the labels of the instances in this bag
+using the \verb+milcombine+ function.
+
+In many learning situations you want to have the positive and negative bags
+split. In these situation it may be useful to use \verb+positive_bags+:
+\begin{verbatim}
+>> [pos_bags, neg_bags] = getpositivebags(a);
+\end{verbatim}
+To obtain the bag identifier, that is the bag number an instance belongs
+to, use \verb+getbagid+.
+
+If you want to split a MIL dataset into a training and a test set, you
+have to be careful not to split a bag in two. To avoid that, the
+function \verb+gendatmil+ is created. Similarly, if you want to
+randomize the order of the bags, use \verb+milrandomize+.
+
+Finally, when you want to combine two MIL datasets \verb+a1+ and
+\verb+a2+ into one, you cannot just concatenate them like
+\verb+b=[a1;a2]+ because bag labels can be confused. The bag called
+\verb+1+ from \verb+a1+ can then not be distinguished from bag \verb+1+
+from \verb+a2+. Therefore you have to use \verb+milmerge+.
+
+\section{Training a classifier}
+
+Now we have data, and a way to split it in a training set and a test
+set, we can train a MIL classifier. A typical script looks like:
+\begin{verbatim}
+>> a = gendatmilg([20 20]);  % 20 positive and 20 negative bags
+>> [x,z] = gendatmil(a,0.7); % use 70% for training
+>> w = milboostc(x);
+>> z*w*labeld
+\end{verbatim}
+Note, that the labels that are returned on the last line, are the
+predicted labels for the test bags. Therefore the number of predicted
+labels is less than the number of rows in \verb+z+.
+
+There are several MIL classifiers implemented, and they will be
+discussed in chapter \ref{ch:classifiers}.
+
+%----------------------------------------------------------------
+\chapter{Evaluation}
+\label{ch:evaluation}
+
+\section{Visual inspection, scatterplots and decision boundaries}
+
+To get a feeling or intuition of a dataset and a classifier, a
+scatterplot with a decision boundary is often very insightful. For that,
+Prtools has the functions \verb+scatterd+ and \verb+plotc+ available.
+This only works for 2-dimensional datasets and classifiers that work on
+2-dimensional data.
+
+For a MIL problem, there is the additional problem that instances are
+organized in bags, and classifiers output bag labels. When the standard
+function \verb+scatterd+ is applied to a MIL dataset, a scatterplot of
+the instances is shown, but it is unclear which instances belong to one
+bag. One attempt to make that visible is to connect all instances of one
+bag with straight lines to a center. This is implemented by
+\verb+scattermil+:
+\begin{verbatim}
+>> a = gendatmilg([20 20]);  % 20 positive and 20 negative bags
+>> scattermil(a)
+\end{verbatim}
+
+A similar problem appears when the decision boundary of a MIL classifier
+is requested: MIL classifiers in principle deal with bags of instances,
+not with individual instances. In order to still plot a decision
+boundary, it is assumed that all the 2-dimensional vectors are
+individual bags. That means that all bags only contain a single
+instance. Because this may not be very realistic, a warning is given
+when a MIL classifier is plotted using \verb+plotc+:
+\begin{verbatim}
+>> scattermil(a)
+>> w = milboostc(a);
+>> plotc(w)
+Warning: No bag identifiers present: each obj is a bag.
+\end{verbatim}
+
+%----------------------------------------------------------------
+\section{Classification error, ROC curve and crossvalidation}
+
+To get to the performance of a MIL classifier, the predictions of the
+classifier on bags should be compared to the true labels of the bags.
+This can be done by the standard Prtools function \verb+testc+:
+\begin{verbatim}
+>> a = gendatmilg([20 20]);  % 20 positive and 20 negative bags
+>> [x,z] = gendatmil(a,0.7); % use 70% for training
+>> w = milboostc(x);
+>> z*w*testc
+\end{verbatim}
+
+When a MIL dataset is mapped through a MIL classifier, the resulting
+output dataset \verb+d = a*w+ only contains the output per bag. For each
+bag dataset \verb+d+ contains one line, containing the posterior
+probabilities per class (the positive and negative class). At this point
+dataset \verb+d+ is indistinguisable from a normal Prtools dataset, and
+\verb+testc+ can directly be applied.
+
+For situations that the classes are very unbalanced, or you want to 
+take a wide range of misclassification costs into account, often
+Receiver Operating Characteristic (ROC) curves are used. For the output of MIL
+classifiers the ROC curve can be computed like:
+\begin{verbatim}
+>> w = milboostc(x);
+>> r = milroc(z*w)
+\end{verbatim}
+This ROC curve \verb+r+ can then be used in \verb+plotroc+ and
+\verb+dd_auc+. These two functions are available in Dd\_tools, and they
+plot the ROC curve, and compute the Area under the ROC curve,
+respectively.
+
+In practice, you are not interested in the performance on the training
+set, but you want to evaluate it on independent test data.
+In order to make most use of the data, crossvalidation is used. For MIL
+problems the data should be split according to the bags. This can be
+done using \verb+milcrossval+. The implementation is such that you, the
+user, still has to make a loop over de different folds. The information
+which objects are used for testing in which fold, is stored in an
+additional variable (\verb+I+ in the next example). A typical
+implementation looks like:
+\begin{verbatim}
+a = gendatmilg([50 50]);   % get data
+nrfolds = 10;              % define nr. of folds
+perf = zeros(nrfolds,1);   % storage for results
+I = nrfolds;               % index variable for crossvalidation
+for i=1:nrfolds
+   [x,z,I] = milcrossval(a,I);    %split in train and test
+   w = milboostc(x);              %train on train set
+   out = z*w;                     %get test output
+   perf(i) = dd_auc(out*milroc);  %AUC performance
+end
+\end{verbatim}
+
+
+%----------------------------------------------------------------
+\chapter{Classifiers}\label{ch:classifiers}
+
+In Figure \ref{fig:overview} an overview of MIL classification
+approaches is shown. The top row shows the `naive' approach, where a
+standard classifier is directly trained on the individual instances. The
+next two rows extract a bag-level representation, and use that as input
+for a standard classifier. The last approach contain the `real' MIL
+approaches, that typically involve a selection mechanism to select the
+informative set of instances from each bag. For each of the approaches
+some classifiers are present in the toolbox. They will be discussed in
+the coming sections.
+
+\section{Naive approach}
+
+In the construction of the MIL dataset, in principle each instance in a
+bag is labeled (see \ref{sec:mildataset}). Given these labeled
+instances, a standard Prtools classifier can be trained. In order to get
+an output label per bag, the instance predictions have to be combined.
+For this, the function \verb+milcombine+ is defined. In order to train
+the sequence of Prtools classifier and combination rule, you can first
+define an untrained mapping \verb+u+. This untrained mapping can be
+trained in one step, and then applied to new data:
+\begin{verbatim}
+u = loglc*milcombine;     % untrained sequence of classifier and combiner
+a = gendatmilg([50 150]); % some dataset
+[x,z] = gendatmil(a,0.7); % split in train and test set
+w = x*u;                  % train on train set
+out = z*w;                % evaluate on test set
+out*labeld
+\end{verbatim}
+
+The function \verb+milcombine+ defines how the bag label is derived from
+the instance predictions. Several rules are defined (\verb+'presence'+
+is the default):
+
+\begin{tabular}{ll}
+\verb+'presence'+& indicate the presence of the positive class \\
+\verb+'first'+   & just copy the first label \\
+\verb+'majority'+& take the majority class \\
+\verb+'vote'+    & identical to 'majority' \\
+\verb+'noisyor'+ & noisy OR \\
+\verb+'sumlog'+  & take the sum of the log(p)'s (similar to the product
+   comb.) \\
+\verb+'average'+ & average the outcomes of the bag \\
+\verb+'mean'+    & identical to 'average' \\
+\verb+F=0.1+     & take the F-th quantile fraction of the positives 
+\end{tabular}
+
+So, if we want to use the quadratic classifier, and want to get a
+positive bag when at least $10\%$ of the instances are classified as
+positive, you have to define the following mapping:
+\begin{verbatim}
+u = qdc*classc*milcombine([],0.1);
+\end{verbatim}
+
+An all-in-one MIL classifier that does the same, is called
+\verb+simple_mil+.
+
+
+\section{Bag representations}
+
+There are several procedures defined to extract a feature vector from a
+bag of instances. The first, straightforward way is to use
+\verb+milvector+, where basic statistics are computed, as the mean
+vector, the minimum and maximum feature values, the covariance matrix,
+or even the number of instances in a bag.
+
+This function is a mapping, so it can be combined with other mappings to
+form a sequence of mappings. For instance, to compute the mean vector
+per bag, and train an LDA classifier on top of that, you can define
+the mapping:
+\begin{verbatim}
+u = milvector([],'m')*ldc;
+\end{verbatim}
+
+A slightly more advanced approach to obtain a fixed-length vector
+representation of bags, is by using a 'Bag of Words' approach. This
+approach originates from natural language processing, where a document
+is represented by a vector of word counts. The word order is therefore
+lost. To apply this approach to general MIL datasets, the
+collection of `words' should be defined first. In this toolbox, these
+`words' are defined as the cluster centers obtained from a mixture of
+Gaussians.\footnote{The mixture of Gaussians implementation of 
+   Dd\_tools is used. You can download that from
+\url{http://prlab.tudelft.nl/david-tax/dd_tools.html} .}
+Next, for each bag, the instances are assigned to the closest
+cluster center (or, word). This results in a histogram over the word for
+each bag.
+
+This procedure is implemented in \verb+bowm+. The number of clusters, or
+words \verb+K+ should be defined beforehand. Running this code:
+\begin{verbatim}
+K = 30;
+u = bowm([],K)*ldc;
+\end{verbatim}
+will result in an LDA trained on a \verb+K+-dimensional dataset.
+Typically, a hard assignment is not very good, and it is better to use
+the soft assignments:
+\begin{verbatim}
+u = bowm([],K,'soft')*ldc;
+\end{verbatim}
+
+An alternative way of representing a bag by a single vector, is by
+defining a kernel or similarity, between bags. Several kernels are
+defined in the function \verb+milproxm+. These kernels can then be used
+in kernel machines, like a support vector classifier. For this the
+function \verb+sv_mil+ is defined:
+\begin{verbatim}
+C = 10;            % tradeoff parameter in support vector classifier
+u = scalem([],'variance') * sv_mil([],C,milproxm([],'minmin'));
+\end{verbatim}
+In this example, I used the \verb+'minmin'+ kernel, that computes all
+pairwise (euclidean) distances between all instances of two kernels, and then uses
+the minimum distance. Because the euclidean distance is sensitive to the
+scaling of the features, I first rescale the data such that all features
+have a variance of 1. This is achieved by the mapping \verb+scalem+ in
+front of the \verb+sv_mil+.
+
+Other kernels are also implemented:
+
+\begin{tabular}{lp{11cm}}
+\verb+'minmin'+  &Minimum of minimum distances between inst. \\
+\verb+'summin'+  &Sum of minimum distances between inst. \\
+\verb+'meanmin'+ &Mean of minimum distances between inst. \\
+\verb+'meanmean'+&Mean of mean distances between inst. \\
+\verb+'mahalanobis'+&Mahalanobis distance between bags\\
+\verb+'hausdorff'+&(maximum) Hausdorff distance between bags\\
+\verb+'emd'+      &Earth mover's distance (requires \verb+emd_mex+!)\\
+\verb+'linass'+   &Linear Assignment distance \\
+\verb+'miRBF'+    &MI-kernel by Gartner,Flach,Kowalczyk,Smola,
+               basically just summing the pairwise instance kernels
+               (here we use the RBF by default)\\
+\verb+'mmdiscr'+  &Maximum mean discrepancy, from Gretton,
+               Borgwardt, Rasch, Schoelkopf and Smola\\
+\verb+'miGraph'+  &miGraph kernel. This requires two additional
+               parameters in KPAR: KPAR[1] indicates the threshold on
+               the maximim distance between instances (in order to
+               allow an edge between the two instances), KPAR[2]
+               indicates the $\gamma=1/\sigma^2$ in the RBF kernel between
+               instances.\\
+\verb+'rwk'+      &Random Walk graph kernel. KPAR[1] is defined as
+               in miGraph. KPAR[2] indicates gamma in the RBF kernel
+               between nodes. KPAR[3] indicates $\lambda$ in infinite sum over
+               walks ($0<\lambda<1$). \\
+\verb+'spk'+      &Shortest Path graph kernel. KPAR[1] is defined
+                as in miGraph. KPAR[2] and KPAR[3] indicate gamma parameters in the RBF
+                kernels between nodes and between edges. KPAR[4] indicates the
+                trade-off between nodes and edges.
+\end{tabular}
+
+\section{MIL classifiers}
+\label{sec:realmil}
+
+The real MIL classifiers, that perform a selection of interesting
+instances from training bags, covers a wide range of different
+classifiers.
+
+\begin{tabular}{lp{11cm}}
+\verb+apr_mil+  & the very first MIL classifier, fitting an
+   axis-parallel rectangular decision boundary\\
+\verb+maxDD_mil+& maximum Diverse Density, fitting a concept in a
+   probabilistic way \\
+\verb+emdd_mil+& EM version of maximum Diverse Density\\
+\verb+misvm+    & iterative SVM that selects a fraction of the most
+   positive instances from positive bags\\
+\verb+spec_mil+ & generalized version of \verb+misvm+ \\
+\verb+milboostc+ & Boosting approach to MIL \\
+   \verb+miles+ & the MILES classifier (Multiple Instance Learning via
+   Embedded Instance Selection)\\
+\end{tabular}
+
+
+%----------------------------------------------------------------
+\chapter{Remarks, issues}
+
+\section{Instance labels and bag labels}
+
+One of the potential advantages of MIL classifiers is, that they are not
+only capable of predicting bag labels, but they may also be
+able to recover labels of instances. This holds particularly for the
+`real' MIL classifiers, as mentioned in section \ref{sec:realmil}.
+
+
+\end{document}
